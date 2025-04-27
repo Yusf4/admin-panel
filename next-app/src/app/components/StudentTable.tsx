@@ -81,7 +81,7 @@ const StudentTable = ({ students, searchQuery, setStudents }) => {
             <th className="py-3 px-4 text-left">Last Name</th>
             <th className="py-3 px-4 text-left">Grade Level</th>
             <th className="py-3 px-4 text-left">Previous School</th>
-            <th className="py-3 px-4 text-left">Admission Status</th>
+            <th className="py-3 px-4 text-left">Phase</th>
             <th className="py-3 px-4 text-left">Last Update</th>
             <th className="py-3 px-4 text-left">Notes</th>
           </tr>

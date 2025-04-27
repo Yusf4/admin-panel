@@ -3,67 +3,54 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import StudentTable from './components/StudentTable';
+import { Button } from './components/ui/button'; // assuming you use Shadcn UI button
+import Link from 'next/link'; // for navigating to the add-student page
 
 const StudentsPage = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [newStudent, setNewStudent] = useState({
-    firstName: '',
-    lastName: '',
-    gradeLevel: '',
-    previousSchool: '',
-    admissionStatus: '',
-    lastUpdate: '',
-    notes: '',
-  });
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState('');
+  const [selectedAdmissionStatus, setSelectedAdmissionStatus] = useState('');  // Renamed to 'selectedAdmissionStatus'
+  const [gradeLevels, setGradeLevels] = useState<string[]>([]); // Store unique grade levels as strings
 
-  // Fetch students from the API
+
   const fetchStudents = async () => {
     try {
       const res = await axios.get('http://localhost:3000/students');
       const data = res.data;
       setStudents(data);
+  
+      // Log the admissionStatus of each student to ensure "Submitted" exists
+      data.forEach(student => {
+        console.log(`Student ID: ${student.id}, Admission Status: ${student.admissionStatus}`);
+      });
+  
+      // Extract unique grade levels from the fetched data
+      const uniqueGradeLevels = Array.from(new Set(data.map((student: any) => student.gradeLevel)));
+      setGradeLevels(uniqueGradeLevels.map(String)); // Store them as strings in the state
     } catch (error) {
       console.error('Failed to fetch students:', error);
     }
   };
+  // Fetch students from the API
+ /* const fetchStudents = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/students');
+      const data = res.data;
+      setStudents(data);
 
-  // Call the fetchStudents function when the component mounts
+
+      // Extract unique grade levels from the fetched data
+      const uniqueGradeLevels = Array.from(new Set(data.map((student: any) => student.gradeLevel)));
+      setGradeLevels(uniqueGradeLevels.map(String)); // Store them as strings in the state
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+    }
+  };
+*/
   useEffect(() => {
     fetchStudents();
   }, []);
-
-  // Handle creating a new student
-  const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStudent),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to create student');
-      }
-
-      const createdStudent = await res.json();
-      setStudents((prev) => [...prev, createdStudent]);
-
-      // Reset the form
-      setNewStudent({
-        firstName: '',
-        lastName: '',
-        gradeLevel: '',
-        previousSchool: '',
-        admissionStatus: '',
-        lastUpdate: '',
-        notes: '',
-      });
-    } catch (error) {
-      console.error('Error creating student:', error);
-    }
-  };
 
   // Handle updating the previous school dynamically
   const handlePreviousSchoolChange = async (
@@ -72,14 +59,12 @@ const StudentsPage = () => {
   ) => {
     const updatedPreviousSchool = e.target.value;
 
-    // Update the student data in the backend
     try {
       const res = await axios.put(`http://localhost:3000/students/${studentId}`, {
         previousSchool: updatedPreviousSchool,
       });
 
       if (res.status === 200) {
-        // Update the state with the new student data
         setStudents((prevStudents) =>
           prevStudents.map((student) =>
             student.id === studentId
@@ -93,11 +78,40 @@ const StudentsPage = () => {
     }
   };
 
+  // Filter students based on searchQuery, selectedGradeLevel, and selectedAdmissionStatus
+  const filteredStudents = students.filter((student) => {
+    // Filter by search query (ID, first name, or last name)
+    const matchesSearchQuery =
+      student.id.toString().includes(searchQuery) ||
+      student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.lastName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Filter by selected grade level (ensure both values are strings for comparison)
+    const matchesGradeLevel = selectedGradeLevel
+      ? student.gradeLevel.toString() === selectedGradeLevel
+      : true;
+
+    // Filter by selected admission status (formerly 'phase')
+    const matchesAdmissionStatus = selectedAdmissionStatus
+      ? student.admissionStatus && student.admissionStatus.toLowerCase() === selectedAdmissionStatus.toLowerCase()
+      : true;
+
+    // Return true only if all filters match
+    return matchesSearchQuery && matchesGradeLevel && matchesAdmissionStatus;
+  });
+
   return (
     <div className="container mx-auto p-6 bg-gray-50 min-h-screen">
       <h1 className="text-4xl font-semibold text-center text-gray-800 mb-8">
         Student Management Dashboard
       </h1>
+
+      {/* Button to navigate to Add Student Page */}
+      <div className="flex justify-end mb-6">
+        <Link href="/students/add">
+          <Button>Add New Student</Button>
+        </Link>
+      </div>
 
       {/* Search Bar */}
       <div className="mb-6">
@@ -110,79 +124,45 @@ const StudentsPage = () => {
         />
       </div>
 
-      {/* Add New Student Form */}
-      <form onSubmit={handleCreateStudent} className="space-y-6 bg-white p-8 rounded-md shadow-lg mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800">Add New Student</h2>
-
-        <div className="grid grid-cols-2 gap-6">
-          <input
-            type="text"
-            placeholder="First Name"
-            className="p-3 border border-gray-300 rounded-md"
-            value={newStudent.firstName}
-            onChange={(e) => setNewStudent({ ...newStudent, firstName: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            className="p-3 border border-gray-300 rounded-md"
-            value={newStudent.lastName}
-            onChange={(e) => setNewStudent({ ...newStudent, lastName: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Grade Level"
-            className="p-3 border border-gray-300 rounded-md"
-            value={newStudent.gradeLevel}
-            onChange={(e) => setNewStudent({ ...newStudent, gradeLevel: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Previous School"
-            className="p-3 border border-gray-300 rounded-md"
-            value={newStudent.previousSchool}
-            onChange={(e) => setNewStudent({ ...newStudent, previousSchool: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Admission Status"
-            className="p-3 border border-gray-300 rounded-md"
-            value={newStudent.admissionStatus}
-            onChange={(e) => setNewStudent({ ...newStudent, admissionStatus: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Last Update"
-            className="p-3 border border-gray-300 rounded-md"
-            value={newStudent.lastUpdate}
-            onChange={(e) => setNewStudent({ ...newStudent, lastUpdate: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <input
-            type="text"
-            placeholder="Notes"
-            className="w-full p-3 border border-gray-300 rounded-md"
-            value={newStudent.notes}
-            onChange={(e) => setNewStudent({ ...newStudent, notes: e.target.value })}
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        {/* Grade Level Filter */}
+        <select
+          value={selectedGradeLevel}
+          onChange={(e) => setSelectedGradeLevel(e.target.value)}
+          className="p-3 border border-gray-300 rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          Add Student
-        </button>
-      </form>
+          <option value="">All Grade Levels</option>
+          {/* Dynamically generate grade level options */}
+          {gradeLevels.map((grade) => (
+            <option key={grade} value={grade}>
+              Grade {grade}
+            </option>
+          ))}
+        </select>
+
+        {/* Admission Status Filter (formerly Phase) */}
+        <select
+          value={selectedAdmissionStatus}
+          onChange={(e) => setSelectedAdmissionStatus(e.target.value)}  // Update selectedAdmissionStatus based on the dropdown
+          className="p-3 border border-gray-300 rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Admission Statuses</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Approved">Approved</option>
+          <option value="Pending">Pending</option>
+          <option value="Rescheduled">Rescheduled</option>
+        </select>
+      </div>
 
       {/* Student Table */}
       <StudentTable
-        students={students}
+        students={filteredStudents} // Pass filtered students to the table
         searchQuery={searchQuery}
+        selectedGradeLevel={selectedGradeLevel}
+        selectedAdmissionStatus={selectedAdmissionStatus}  // Pass selectedAdmissionStatus to the table if needed
         setStudents={setStudents}
-        handlePreviousSchoolChange={handlePreviousSchoolChange} // Pass the function to the table
+        handlePreviousSchoolChange={handlePreviousSchoolChange}
       />
     </div>
   );
