@@ -6,6 +6,9 @@ const StudentTable = ({ students, searchQuery, setStudents }) => {
   const [editedPreviousSchool, setEditedPreviousSchool] = useState<string>('');
   const [error, setError] = useState<string>('');
 
+  // Predefined admission status options
+  const admissionStatuses = ['Submitted', 'Approved', 'Pending', 'Rescheduled'];
+
   // Function to handle updating the Previous School field
   const handlePreviousSchoolChange = async (id: number, newPreviousSchool: string) => {
     try {
@@ -26,7 +29,27 @@ const StudentTable = ({ students, searchQuery, setStudents }) => {
     }
   };
 
-  // Handle the edit button click
+  // Function to handle updating the Admission Status field
+  const handleAdmissionStatusChange = async (id: number, newStatus: string) => {
+    try {
+      // Make an API call to update the 'admissionStatus' in the database
+      const res = await axios.put(`http://localhost:3000/students/${id}`, {
+        admissionStatus: newStatus,
+      });
+
+      // After successfully updating, update the state to reflect the change
+      setStudents((prev) =>
+        prev.map((student) =>
+          student.id === id ? { ...student, admissionStatus: newStatus } : student
+        )
+      );
+    } catch (error) {
+      setError('Error updating admission status.');
+      console.error('Error updating admission status:', error);
+    }
+  };
+
+  // Handle the edit button click for Previous School field
   const handleEditClick = (studentId: number, currentPreviousSchool: string) => {
     setEditingStudentId(studentId);
     setEditedPreviousSchool(currentPreviousSchool);
@@ -96,7 +119,19 @@ const StudentTable = ({ students, searchQuery, setStudents }) => {
                     </span>
                   )}
                 </td>
-                <td className="py-3 px-4">{student.admissionStatus}</td>
+                <td className="py-3 px-4">
+                  <select
+                    value={student.admissionStatus}
+                    onChange={(e) => handleAdmissionStatusChange(student.id, e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  >
+                    {admissionStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </td>
                 <td className="py-3 px-4">{student.lastUpdate}</td>
                 <td className="py-3 px-4">{student.notes}</td>
               </tr>
