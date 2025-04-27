@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import StudentTable from './components/StudentTable';
 import axios from 'axios';
+import StudentTable from './components/StudentTable';
 
 const StudentsPage = () => {
   const [students, setStudents] = useState<any[]>([]);
@@ -22,19 +22,9 @@ const StudentsPage = () => {
     try {
       const res = await axios.get('http://localhost:3000/students');
       const data = res.data;
-      console.log('hello Fetch');
-      console.log('data:', data);
       setStudents(data);
     } catch (error) {
-      console.log('hello Error');
       console.error('Failed to fetch students:', error);
-      if (error.response) {
-        console.error('Error Response:', error.response);
-      } else if (error.request) {
-        console.error('Error Request:', error.request);
-      } else {
-        console.error('General Error:', error.message);
-      }
     }
   };
 
@@ -72,6 +62,34 @@ const StudentsPage = () => {
       });
     } catch (error) {
       console.error('Error creating student:', error);
+    }
+  };
+
+  // Handle updating the previous school dynamically
+  const handlePreviousSchoolChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    studentId: number
+  ) => {
+    const updatedPreviousSchool = e.target.value;
+
+    // Update the student data in the backend
+    try {
+      const res = await axios.put(`http://localhost:3000/students/${studentId}`, {
+        previousSchool: updatedPreviousSchool,
+      });
+
+      if (res.status === 200) {
+        // Update the state with the new student data
+        setStudents((prevStudents) =>
+          prevStudents.map((student) =>
+            student.id === studentId
+              ? { ...student, previousSchool: updatedPreviousSchool }
+              : student
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error updating previous school:', error);
     }
   };
 
@@ -164,6 +182,7 @@ const StudentsPage = () => {
         students={students}
         searchQuery={searchQuery}
         setStudents={setStudents}
+        handlePreviousSchoolChange={handlePreviousSchoolChange} // Pass the function to the table
       />
     </div>
   );
