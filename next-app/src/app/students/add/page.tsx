@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
+import axios from 'axios';
 const AddStudentPage = () => {
   const router = useRouter();
   const [newStudent, setNewStudent] = useState({
@@ -15,10 +15,16 @@ const AddStudentPage = () => {
     notes: '',
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage(''); // Reset error message on each submission
+
     try {
-      const res = await fetch('/api/students', {
+      const res = await axios.post('/api/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newStudent),
@@ -31,17 +37,19 @@ const AddStudentPage = () => {
       await res.json();
       router.push('/students'); // Redirect back to students page after adding
     } catch (error) {
+      setErrorMessage('Error creating student. Please try again.');
       console.error('Error creating student:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="container mx-auto p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-4xl font-semibold text-center text-gray-800 mb-8">
-        Add New Student
-      </h1>
+      <h1 className="text-4xl font-semibold text-center text-gray-800 mb-8">Add New Student</h1>
 
       <form onSubmit={handleCreateStudent} className="space-y-6 bg-white p-8 rounded-md shadow-lg">
+        {/* Form Inputs */}
         <div className="grid grid-cols-2 gap-6">
           <input
             type="text"
@@ -101,11 +109,18 @@ const AddStudentPage = () => {
           />
         </div>
 
+        {/* Error Message */}
+        {errorMessage && <div className="text-red-500">{errorMessage}</div>}
+
+        {/* Submit Button */}
         <button
           type="submit"
-          className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={`w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            isLoading ? 'cursor-wait' : ''
+          }`}
+          disabled={isLoading}
         >
-          Add Student
+          {isLoading ? 'Adding...' : 'Add Student'}
         </button>
       </form>
     </div>

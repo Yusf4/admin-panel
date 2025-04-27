@@ -65,16 +65,6 @@ const StudentTable: React.FC<StudentTableProps> = ({ students, searchQuery, setS
     setEditingStudentId(null);
   };
 
-  // Map status to text color
-  /*const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Submitted':    return 'text-bold text-gray-500 bg-gray-200 rounded p-2';
-      case 'Approved':     return 'text-bold text-green-500 bg-green-200 rounded p-2';
-      case 'Pending':      return ' text-bold text-blue-700 bg-blue-200 rounded p-2';
-      case 'Rescheduled':  return ' text-bold text-yellow-800 bg-yellow-200 rounded p-2';
-      default:             return 'text-black';
-    }
-  };*/
   const getStatusClasses = (status: string) => {
     switch (status) {
       case 'Submitted':
