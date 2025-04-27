@@ -1,70 +1,95 @@
+// components/StudentTable.tsx
+
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const StudentTable = ({ students, searchQuery, setStudents }) => {
+interface Student {
+  id: number;
+  firstName: string;
+  lastName: string;
+  gradeLevel: number;
+  previousSchool: string;
+  admissionStatus: string;
+  lastUpdate: string;
+  notes: string;
+}
+
+interface StudentTableProps {
+  students: Student[];
+  searchQuery: string;
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+}
+
+const StudentTable: React.FC<StudentTableProps> = ({ students, searchQuery, setStudents }) => {
   const [editingStudentId, setEditingStudentId] = useState<number | null>(null);
   const [editedPreviousSchool, setEditedPreviousSchool] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  // Predefined admission status options
+  // Static list of statuses
   const admissionStatuses = ['Submitted', 'Approved', 'Pending', 'Rescheduled'];
 
-  // Function to handle updating the Previous School field
-  const handlePreviousSchoolChange = async (id: number, newPreviousSchool: string) => {
+  // Update Previous School
+  const handlePreviousSchoolChange = async (id: number, newValue: string) => {
     try {
-      // Make an API call to update the 'previousSchool' in the database
-      const res = await axios.put(`http://localhost:3000/students/${id}`, {
-        previousSchool: newPreviousSchool,
-      });
-
-      // After successfully updating, update the state to reflect the change
+      await axios.put(`http://localhost:3000/students/${id}`, { previousSchool: newValue });
       setStudents((prev) =>
-        prev.map((student) =>
-          student.id === id ? { ...student, previousSchool: newPreviousSchool } : student
-        )
+        prev.map((s) => (s.id === id ? { ...s, previousSchool: newValue } : s))
       );
-    } catch (error) {
-      setError('Error updating student.');
-      console.error('Error updating student:', error);
+    } catch {
+      setError('Error updating previous school.');
     }
   };
 
-  // Function to handle updating the Admission Status field
+  // Update Admission Status
   const handleAdmissionStatusChange = async (id: number, newStatus: string) => {
     try {
-      // Make an API call to update the 'admissionStatus' in the database
-      const res = await axios.put(`http://localhost:3000/students/${id}`, {
-        admissionStatus: newStatus,
-      });
-
-      // After successfully updating, update the state to reflect the change
+      await axios.put(`http://localhost:3000/students/${id}`, { admissionStatus: newStatus });
       setStudents((prev) =>
-        prev.map((student) =>
-          student.id === id ? { ...student, admissionStatus: newStatus } : student
-        )
+        prev.map((s) => (s.id === id ? { ...s, admissionStatus: newStatus } : s))
       );
-    } catch (error) {
+    } catch {
       setError('Error updating admission status.');
-      console.error('Error updating admission status:', error);
     }
   };
 
-  // Handle the edit button click for Previous School field
-  const handleEditClick = (studentId: number, currentPreviousSchool: string) => {
-    setEditingStudentId(studentId);
-    setEditedPreviousSchool(currentPreviousSchool);
+  // Inline edit handlers
+  const startEditing = (id: number, current: string) => {
+    setEditingStudentId(id);
+    setEditedPreviousSchool(current);
   };
-
-  const handleChangePreviousSchool = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPrevChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedPreviousSchool(e.target.value);
   };
-
-  const handleBlur = async (studentId: number) => {
-    if (editedPreviousSchool !== '') {
-      await handlePreviousSchoolChange(studentId, editedPreviousSchool);
-    }
+  const onPrevBlur = async (id: number) => {
+    if (editedPreviousSchool) await handlePreviousSchoolChange(id, editedPreviousSchool);
     setEditingStudentId(null);
   };
+
+  // Map status to text color
+  /*const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Submitted':    return 'text-bold text-gray-500 bg-gray-200 rounded p-2';
+      case 'Approved':     return 'text-bold text-green-500 bg-green-200 rounded p-2';
+      case 'Pending':      return ' text-bold text-blue-700 bg-blue-200 rounded p-2';
+      case 'Rescheduled':  return ' text-bold text-yellow-800 bg-yellow-200 rounded p-2';
+      default:             return 'text-black';
+    }
+  };*/
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case 'Submitted':
+        return 'font-bold text-gray-500 bg-gray-200 rounded px-2 py-1';
+      case 'Approved':
+        return 'font-bold text-blue-500 bg-blue-100 rounded px-2 py-1';
+      case 'Pending':
+        return 'font-bold text-red-500 bg-red-100 rounded px-2 py-1';
+      case 'Rescheduled':
+        return 'font-bold text-yellow-400 bg-yellow-100 rounded px-2 py-1';
+      default:
+        return 'font-bold text-black bg-gray-100 rounded px-2 py-1';
+    }
+  };
+  
 
   return (
     <div className="overflow-x-auto shadow-lg rounded-lg">
@@ -75,65 +100,64 @@ const StudentTable = ({ students, searchQuery, setStudents }) => {
       )}
       <table className="min-w-full table-auto text-sm">
         <thead>
-          <tr className="bg-gray-100 text-gray-600">
-            <th className="py-3 px-4 text-left">Student ID</th>
-            <th className="py-3 px-4 text-left">First Name</th>
-            <th className="py-3 px-4 text-left">Last Name</th>
-            <th className="py-3 px-4 text-left">Grade Level</th>
-            <th className="py-3 px-4 text-left">Previous School</th>
-            <th className="py-3 px-4 text-left">Phase</th>
-            <th className="py-3 px-4 text-left">Last Update</th>
-            <th className="py-3 px-4 text-left">Notes</th>
+          <tr className="bg-blue-100">
+            {['ID','First Name','Last Name','Grade','Previous School','Admission Status','Last Update','Notes'].map((h) => (
+              <th key={h} className="px-4 py-2 font-bold text-black text-left">{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {students
-            .filter((student) => {
-              return (
-                student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                student.id.toString().includes(searchQuery)
-              );
-            })
+            .filter((s) =>
+              s.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              s.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              s.id.toString().includes(searchQuery)
+            )
             .map((student) => (
               <tr key={student.id} className="bg-white border-b hover:bg-gray-50">
-                <td className="py-3 px-4">{student.id}</td>
-                <td className="py-3 px-4">{student.firstName}</td>
-                <td className="py-3 px-4">{student.lastName}</td>
-                <td className="py-3 px-4">{student.gradeLevel}</td>
-                <td className="py-3 px-4">
+                <td className="px-4 py-2">{student.id}</td>
+                <td className="px-4 py-2">{student.firstName}</td>
+                <td className="px-4 py-2">{student.lastName}</td>
+                <td className="px-4 py-2">{student.gradeLevel}</td>
+                <td className="px-4 py-2">
                   {editingStudentId === student.id ? (
                     <input
                       type="text"
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={editedPreviousSchool}
-                      onChange={handleChangePreviousSchool}
-                      onBlur={() => handleBlur(student.id)}
+                      onChange={onPrevChange}
+                      onBlur={() => onPrevBlur(student.id)}
                     />
                   ) : (
                     <span
                       className="text-blue-500 cursor-pointer"
-                      onClick={() => handleEditClick(student.id, student.previousSchool)}
+                      onClick={() => startEditing(student.id, student.previousSchool)}
                     >
                       {student.previousSchool}
                     </span>
                   )}
                 </td>
-                <td className="py-3 px-4">
-                  <select
-                    value={student.admissionStatus}
-                    onChange={(e) => handleAdmissionStatusChange(student.id, e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                  >
-                    {admissionStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                <td className="px-4 py-2">
+                <select
+  value={student.admissionStatus}
+  onChange={(e) =>
+    handleAdmissionStatusChange(student.id, e.target.value)
+  }
+  className={
+    `w-full p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ` +
+    getStatusClasses(student.admissionStatus)
+  }
+>
+  {admissionStatuses.map((status) => (
+    <option key={status} value={status}>
+      {status}
+    </option>
+  ))}
+</select>
+
                 </td>
-                <td className="py-3 px-4">{student.lastUpdate}</td>
-                <td className="py-3 px-4">{student.notes}</td>
+                <td className="px-4 py-2">{student.lastUpdate}</td>
+                <td className="px-4 py-2">{student.notes}</td>
               </tr>
             ))}
         </tbody>
