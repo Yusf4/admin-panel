@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+
 const AddStudentPage = () => {
   const router = useRouter();
   const [newStudent, setNewStudent] = useState({
@@ -24,18 +25,16 @@ const AddStudentPage = () => {
     setErrorMessage(''); // Reset error message on each submission
 
     try {
-      const res = await axios.post('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStudent),
-      });
+      const res = await axios.post('http://localhost:3000/students', newStudent);  // Simplified request
 
-      if (!res.ok) {
+      // Check if the response status is OK
+      if (res.status === 201) {
+        console.log("student:"+newStudent);
+        router.push('/students'); // Redirect to students page after successful addition
+        console.log("student:"+newStudent);
+      } else {
         throw new Error('Failed to create student');
       }
-
-      await res.json();
-      router.push('/students'); // Redirect back to students page after adding
     } catch (error) {
       setErrorMessage('Error creating student. Please try again.');
       console.error('Error creating student:', error);
