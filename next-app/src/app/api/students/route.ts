@@ -21,8 +21,14 @@ export async function POST(request: Request) {
 }
 
 // PUT - Update an existing student
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PUT(request: Request) {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+
+  if (!id) {
+    return NextResponse.json({ message: 'Student ID is required' }, { status: 400 });
+  }
+
   const updatedData = await request.json();
   const studentIndex = students.findIndex(student => student.id === parseInt(id));
 
@@ -34,9 +40,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   return NextResponse.json(students[studentIndex]);
 }
 
-// DELETE - Delete a student
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(request: Request) {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+
+  if (!id) {
+    return NextResponse.json({ message: 'Student ID is required' }, { status: 400 });
+  }
+
   students = students.filter(student => student.id !== parseInt(id));
   return NextResponse.json({ message: 'Student deleted' });
 }

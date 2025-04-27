@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import StudentTable from './components/StudentTable';
+import axios from 'axios';
 
-const Home = () => {
+const StudentsPage = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newStudent, setNewStudent] = useState({
@@ -13,44 +14,72 @@ const Home = () => {
     previousSchool: '',
     admissionStatus: '',
     lastUpdate: '',
-    notes: ''
+    notes: '',
   });
 
   // Fetch students from the API
-  useEffect(() => {
-    const fetchStudents = async () => {
-      const res = await fetch('/api/students');
-      const data = await res.json();
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/students');
+      const data = res.data;
+      console.log('hello Fetch');
+      console.log('data:', data);
       setStudents(data);
-    };
+    } catch (error) {
+      console.log('hello Error');
+      console.error('Failed to fetch students:', error);
+      if (error.response) {
+        console.error('Error Response:', error.response);
+      } else if (error.request) {
+        console.error('Error Request:', error.request);
+      } else {
+        console.error('General Error:', error.message);
+      }
+    }
+  };
 
+  // Call the fetchStudents function when the component mounts
+  useEffect(() => {
     fetchStudents();
   }, []);
 
   // Handle creating a new student
-  const handleCreateStudent = async (e: React.FormEvent) => {
+  const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const res = await fetch('/api/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newStudent)
-    });
-    const createdStudent = await res.json();
-    setStudents([...students, createdStudent]);
-    setNewStudent({
-      firstName: '',
-      lastName: '',
-      gradeLevel: '',
-      previousSchool: '',
-      admissionStatus: '',
-      lastUpdate: '',
-      notes: ''
-    });
+    try {
+      const res = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStudent),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to create student');
+      }
+
+      const createdStudent = await res.json();
+      setStudents((prev) => [...prev, createdStudent]);
+
+      // Reset the form
+      setNewStudent({
+        firstName: '',
+        lastName: '',
+        gradeLevel: '',
+        previousSchool: '',
+        admissionStatus: '',
+        lastUpdate: '',
+        notes: '',
+      });
+    } catch (error) {
+      console.error('Error creating student:', error);
+    }
   };
 
   return (
     <div className="container mx-auto p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-4xl font-semibold text-center text-gray-800 mb-8">Student Management Dashboard</h1>
+      <h1 className="text-4xl font-semibold text-center text-gray-800 mb-8">
+        Student Management Dashboard
+      </h1>
 
       {/* Search Bar */}
       <div className="mb-6">
@@ -66,10 +95,10 @@ const Home = () => {
       {/* Add New Student Form */}
       <form onSubmit={handleCreateStudent} className="space-y-6 bg-white p-8 rounded-md shadow-lg mb-8">
         <h2 className="text-2xl font-semibold text-gray-800">Add New Student</h2>
+
         <div className="grid grid-cols-2 gap-6">
           <input
             type="text"
-            name="firstName"
             placeholder="First Name"
             className="p-3 border border-gray-300 rounded-md"
             value={newStudent.firstName}
@@ -77,7 +106,6 @@ const Home = () => {
           />
           <input
             type="text"
-            name="lastName"
             placeholder="Last Name"
             className="p-3 border border-gray-300 rounded-md"
             value={newStudent.lastName}
@@ -85,7 +113,6 @@ const Home = () => {
           />
           <input
             type="text"
-            name="gradeLevel"
             placeholder="Grade Level"
             className="p-3 border border-gray-300 rounded-md"
             value={newStudent.gradeLevel}
@@ -93,17 +120,13 @@ const Home = () => {
           />
           <input
             type="text"
-            name="previousSchool"
             placeholder="Previous School"
             className="p-3 border border-gray-300 rounded-md"
             value={newStudent.previousSchool}
             onChange={(e) => setNewStudent({ ...newStudent, previousSchool: e.target.value })}
           />
-        </div>
-        <div className="grid grid-cols-2 gap-6">
           <input
             type="text"
-            name="admissionStatus"
             placeholder="Admission Status"
             className="p-3 border border-gray-300 rounded-md"
             value={newStudent.admissionStatus}
@@ -111,30 +134,39 @@ const Home = () => {
           />
           <input
             type="text"
-            name="lastUpdate"
             placeholder="Last Update"
             className="p-3 border border-gray-300 rounded-md"
             value={newStudent.lastUpdate}
             onChange={(e) => setNewStudent({ ...newStudent, lastUpdate: e.target.value })}
           />
+        </div>
+
+        <div>
           <input
             type="text"
-            name="notes"
             placeholder="Notes"
-            className="p-3 border border-gray-300 rounded-md"
+            className="w-full p-3 border border-gray-300 rounded-md"
             value={newStudent.notes}
             onChange={(e) => setNewStudent({ ...newStudent, notes: e.target.value })}
           />
         </div>
-        <button type="submit" className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+        <button
+          type="submit"
+          className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
           Add Student
         </button>
       </form>
 
       {/* Student Table */}
-      <StudentTable students={students} searchQuery={searchQuery} setStudents={setStudents} />
+      <StudentTable
+        students={students}
+        searchQuery={searchQuery}
+        setStudents={setStudents}
+      />
     </div>
   );
 };
 
-export default Home;
+export default StudentsPage;
